@@ -1,0 +1,101 @@
+//
+// This stitcher buids connectivity between a VMWare guest OS
+// and the appropriate VMWare ESXi host. 
+//
+// This stitcher is for ITNM version 3.9
+//
+// Jason Cress
+// IBM C&SI Software Group
+// jcress@us.ibm.com
+//
+
+UserDefinedStitcher
+{
+	StitcherTrigger
+	{
+		//
+		// Stitcher is called by the layer 2 layer building
+		// stitchers.
+		//
+	}
+
+	StitcherRules
+	{
+		text layerName = eval(text, '$ARG_1');
+		text agentName = "VMWareESXiSnmp";
+
+		RecordList noConns = RetrieveOQL
+		(
+			"select m_UniqueAddress, m_LocalNbr, m_RemoteNbr
+			from eval(text, '$agentName').returns
+			where
+			(
+				m_RemoteNbr->m_RemoteNbrIpAddr is not NULL
+			)
+			AND
+			(
+				m_RemoteNbr->m_RemoteNbrPhysAddr is not NULL
+			);"
+		);
+
+		text intName = "";
+        	text uniqueAddress = NULL;
+        	text funiqueAddress = NULL;
+		text fintName = NULL;
+
+        	int ifIndex = 0;
+        	text interfaceId = NULL;
+
+		print("Entering vmware connection loop");
+
+		foreach (noConns)
+		{
+
+			uniqueAddress = eval(text, '&m_UniqueAddress');
+			ifIndex = eval(int, '&m_LocalNbr->m_IfIndex');
+			funiqueAddress = eval(text, '&m_RemoteNbr->m_RemoteNbrIpAddr');
+
+			intName = ExecuteStitcher( 'GetEntityNameByIp', uniqueAddress );
+			fintName = ExecuteStitcher( 'GetEntityNameByIp', funiqueAddress );
+
+			if( intName == NULL )
+			{
+				intName = ExecuteStitcher( 'GetBaseNameByIp', uniqueAddress );
+				if( intName == NULL )
+				{
+					intName = uniqueAddress;
+				}
+			}
+
+			if( fintName == NULL )
+			{
+				fintName = ExecuteStitcher( 'GetBaseNameByIp', funiqueAddress );
+				if( fintName == NULL )
+				{
+					fintName = funiqueAddress;
+				}
+			}
+
+			ExecuteOQL(
+				"delete from fullTopology.entityByNeighbor where m_NbrName = eval(text, '$fintName');"
+			);
+
+			if ( intName <> "" )
+			{
+				ExecuteOQL(
+				"insert into fullTopology.entityByNeighbor
+				(
+					m_Name, m_NbrName
+				)
+				values
+				(
+					eval(text, '$intName'),
+					eval(text, '$fintName')
+				);"
+			);
+			}
+		}
+		delete(noConns);
+	}
+}
+

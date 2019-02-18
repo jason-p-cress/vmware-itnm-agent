@@ -1,0 +1,65 @@
+--
+-- Netcool/Precision Agent Definition
+--
+-- VMWareESXiSnmpSnmp.agnt
+--
+-- This agent interrogates a VMWare ESXi chassis for the MAC addresses
+-- of the active virtual machines that it hosts. It then builds
+-- topology connectivity between the virtual machine guests and the 
+-- appropriate virtual machine host.
+--
+DiscoPerlAgent
+{
+	--
+	-- Optional "ncp_ctrl" info:
+	-- where to run
+	--
+	-- DiscoExecuteAgentOn("<Machine Name>");
+
+
+	--
+	-- Define the devices that should be sent to this agent:
+	--
+	-- This agent operates on all devices. 
+	--
+	DiscoAgentSupportedDevices
+	(
+		"(
+			m_ObjectId LIKE '1\.3\.6\.1\.4\.1\.6876\.'
+	 	)"
+	);
+
+	--
+	-- During which of the n discovery phases should this agent complete?
+	--
+	DiscoAgentCompletionPhase( 3 );
+
+
+	--
+	-- The following fields are used to initialise the config GUI
+	-- and update DiscoAgents.cfg when the agent is first installed
+	--
+	DiscoAgentDescription("
+<b>Agent Name :</b>  VMWareESXiSnmp Agent<br>
+<br>
+<b>Agent Type :</b> VMWare <br>
+<br>
+<b>Agent Prerequisites :</b>  SNMP helper configuration for associated devices.<br>
+MACFromArpCache agent must be enabled<br>
+<br>
+<b>Operation :</b><br>
+VMWare ESXi SNMP agent<br>
+<br>
+	");
+
+
+	DiscoAgentGUILocked( 0 );
+	DiscoAgentClass( 1 );
+	DiscoAgentIsIndirect( 0 );
+	DiscoAgentPrecedence( 2 );
+	DiscoAgentEnabledByDefaultOnPartial( 0 );
+	DiscoAgentEnabledByDefault( 0 );
+    DiscoAgentDefaultThreads( 1 );
+}
+
+

@@ -1,0 +1,86 @@
+
+//
+// This stitcher handles any processing that is done after the layers are
+// built but before we build the scratch topology.
+// 
+// 
+UserDefinedStitcher 
+{
+	StitcherTrigger
+	{
+		//
+		//	Declare the stitcher to act when the user asks for it
+		//
+	}
+
+	//
+	//	What does it do
+	//
+	StitcherRules
+	{
+		int isRediscovery = 0;
+		isRediscovery = eval(int, '$ARG_1');
+
+		ExecuteStitcher("ProcessSwitchModules", isRediscovery);					
+
+		//
+		// This stitcher is not essential, and is therefore
+		// commented out.  If you require unconnected nodes to be
+		// put in containers, please uncomment the next line.
+		//
+		//ExecuteStitcher('AddUnconnectedContainment', isRediscovery);
+
+		Record configRec = RetrieveSingleOQL
+		(
+			"select * from disco.config;"
+		);
+        
+        int vlanModelling = 0;
+        int inferPEsUsingBGP = 0;
+
+        if(configRec != NULL)
+        {
+            vlanModelling = ExecEvalOnRecord(configRec, 
+                                            eval(int,'&m_ModelVlans') );
+            inferPEsUsingBGP = ExecEvalOnRecord(configRec, 
+                                            eval(int,'&m_InferPEsUsingBGP') );
+        }
+        delete(configRec);
+
+		if (vlanModelling == 1)
+		{
+			ExecuteStitcher('AddGlobalVlans', isRediscovery);
+		}
+
+        // Handle VPN tagging and (optionally) MPLS containment
+        ExecuteStitcher('MPLSProcessing', isRediscovery);
+
+		if (vlanModelling == 1)
+		{
+			ExecuteStitcher('CreateTrunkConnections', isRediscovery);
+			ExecuteStitcher('AddSwitchRoutingLinks', isRediscovery);
+		}
+
+		ExecuteStitcher('ResetNATMainNodes', isRediscovery);
+
+        ExecuteStitcher('RemoveOutOfBandConnectivity' , isRediscovery);
+
+        // This stitcher is not essential, and is therefore commented out.
+        // Uncomment it only if there is problem of RCA due to the
+        // SUBNET_OBJECT connections to the devices.
+        //
+        //ExecuteStitcher('RemoveExcessSubnetLinks' , isRediscovery);
+
+
+	// VMWareESXiSnmp agent stitcher call - 3.9 version
+
+	ExecuteStitcher('VMWareESXiSnmp', isRediscovery);
+
+
+        if (inferPEsUsingBGP == 1)
+        {
+            ExecuteStitcher('CreateMPLSPE' , isRediscovery);
+        }
+	}
+}
+

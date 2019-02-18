@@ -1,0 +1,14 @@
+//*************************************************************
+//
+//  File : VMWareESXi.aoc
+//
+//*************************************************************
+
+active object 'VMWareESXi.aoc'
+{
+	super_class = 'NetworkDevice';
+
+	instantiate_rule = "EntityOID like '1\.3\.6\.1\.4\.1\.6876\.'"; 
+
+	visual_icon = 'NetworkDevice';
+};

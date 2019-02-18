@@ -1,0 +1,105 @@
+
+//
+// This stitcher handles any processing that is done after the layers are
+// built but before we build the scratch topology.
+// 
+// 
+UserDefinedStitcher 
+{
+    StitcherTrigger
+    {
+        //
+        //    Declare the stitcher to act when the user asks for it
+        //
+    }
+
+    //
+    //    What does it do
+    //
+    StitcherRules
+    {
+        int isRediscovery = 0;
+        isRediscovery = eval(int, '$ARG_1');
+
+        text dynamicDiscoNode = NULL;
+        if (ARG_NUMB > 1)
+        {
+            dynamicDiscoNode = eval(text, '$ARG_2');
+        }
+
+        ExecuteStitcher("ProcessSwitchModules", isRediscovery, dynamicDiscoNode);
+
+        //
+        // This stitcher is not essential, and is therefore
+        // commented out.  If you require unconnected nodes to be
+        // put in containers, please uncomment the next line.
+        //
+        //ExecuteStitcher('AddUnconnectedContainment', isRediscovery, dynamicDiscoNode);
+
+        Record configRec = RetrieveSingleOQL
+        (
+            "select * from disco.config;"
+        );
+        
+        int vlanModelling = 0;
+
+        if(configRec != NULL)
+        {
+            vlanModelling = @configRec.m_ModelVlans;
+        }
+
+        if (vlanModelling == 1 and dynamicDiscoNode == NULL)
+        {
+            ExecuteStitcher('AddGlobalVlans', isRediscovery);
+        }
+
+        // Handle VPN tagging and (optionally) MPLS containment
+        ExecuteStitcher('MPLSProcessing', isRediscovery, dynamicDiscoNode);
+
+
+
+        if (vlanModelling == 1)
+        {
+            ExecuteStitcher('CreateTrunkConnections', isRediscovery, dynamicDiscoNode);
+            ExecuteStitcher('AddSwitchRoutingLinks', isRediscovery, dynamicDiscoNode);
+        }
+
+        ExecuteStitcher('ResetNATMainNodes', isRediscovery, dynamicDiscoNode);
+
+        ExecuteStitcher('RemoveOutOfBandConnectivity' , isRediscovery);
+
+        // This stitcher is not essential, and is therefore commented out.
+        // Uncomment it only if there is problem of RCA due to the
+        // SUBNET_OBJECT connections to the devices.
+        //
+        //ExecuteStitcher('RemoveExcessSubnetLinks' , isRediscovery);
+
+
+        // OSPF Domain Resolution
+        // Post-layer as it requires access to the OSPF topology, specifically
+        // OSPFLayer.links (created by OSPFLayer.stch).
+        // Note: In the case of a rediscovery the old OSPF topology will
+        // be used if rebuild layers is disabled.
+        //
+        ExecuteStitcher('OSPFPostLayerProcessing', isRediscovery, dynamicDiscoNode);
+
+
+        // Create an entity to represent each Collector discovered EMS.
+        // May also infer hosting chassis. We do this stitching here rather
+        // than in BuildFinalEntityTable as users may wish to make use of
+        // the PresetLayers functionality to manually add EMS hosting chassis
+        // objects in preference to the ones this stitcher may infer.
+        // Note: Dynamic Discovery does not currently support Collectors.
+        if( dynamicDiscoNode == NULL )
+        {
+            ExecuteStitcher('CreateEmsEntities', isRediscovery);
+        }
+
+        ExecuteStitcher('AddClass' );
+        ExecuteStitcher('AddChassisIPTag' );
+
+	// VMWareESXiSnmp agent stitcher call - 4.2 version
+
+	ExecuteStitcher('VMWareESXiSnmp', isRediscovery);
+    }
+}
