@@ -67,7 +67,7 @@ Example:
         //
         //ExecuteStitcher('RemoveExcessSubnetLinks' , isRediscovery);
 
---->    ExecuteStitcher('VMWareESXiSnmp', isRediscovery);
+   --->    ExecuteStitcher('VMWareESXiSnmp', isRediscovery);
 
 
         if (inferPEsUsingBGP == 1)
