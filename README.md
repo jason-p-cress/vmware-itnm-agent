@@ -58,6 +58,7 @@ manually modify the PostLayerProcessing.stch file and add the call to the VMWare
 
 Example:
 
+```
 ---------------- begin example snippet ----------------
         ExecuteStitcher('RemoveOutOfBandConnectivity' , isRediscovery);
 
@@ -76,7 +77,7 @@ Example:
         }
 	}
 ---------------- end example snippet ----------------
-
+```
 
 The agent installation package also includes a VMWareESXi active object class (aoc) file, and will prompt you to install it.
 The AOC file is not required, but recommended if you don't already have an active object class for VMWare ESXi devices.
